@@ -1,91 +1,23 @@
-plugins {
-    id 'com.android.application'
-}
-
 def keystoreFilepath = ''
 def keystorePSW = ''
 def keystoreAlias = ''
 def keystoreAliasPSW = ''
-// default keystore file, PLZ config file path in local.properties
 def keyfile = file('s.keystore.temp')
 
-Properties properties = new Properties()
-// local.properties file in the root director
-properties.load(project.rootProject.file('local.properties').newDataInputStream())
-keystoreFilepath = properties.getProperty("keystore.path")
+def localPropertiesFile = project.rootProject.file('local.properties')
 
-if (keystoreFilepath) {
-    keystorePSW = properties.getProperty("keystore.password")
-    keystoreAlias = properties.getProperty("keystore.alias")
-    keystoreAliasPSW = properties.getProperty("keystore.alias_password")
-    keyfile = file(keystoreFilepath)
-}
-
-android {
-    namespace 'com.cfks.goosedroid'
-    compileSdk 36
-
-    defaultConfig {
-        applicationId "com.cfks.goosedroid"
-        minSdk 24
-        targetSdk 36
-        versionCode 5
-        versionName '1.0.4'
-
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+if (localPropertiesFile.exists()) {
+    Properties properties = new Properties()
+    localPropertiesFile.withInputStream {
+        properties.load(it)
     }
 
+    keystoreFilepath = properties.getProperty("keystore.path")
 
-    buildTypes {
-        release {
-            minifyEnabled true
-            shrinkResources true
-            zipAlignEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            println("WITH -> buildTypes -> release: using default key")
-        }
-
-        debug {
-            println("WITH -> buildTypes -> debug: using default key")
-        }
+    if (keystoreFilepath) {
+        keystorePSW = properties.getProperty("keystore.password")
+        keystoreAlias = properties.getProperty("keystore.alias")
+        keystoreAliasPSW = properties.getProperty("keystore.alias_password")
+        keyfile = file(keystoreFilepath)
     }
-
-    // Solo configurar signing si existe keystore personalizado
-    if (keyfile.exists()) {
-        signingConfigs {
-            release {
-                keyAlias keystoreAlias
-                keyPassword keystoreAliasPSW
-                storeFile keyfile
-                storePassword keystorePSW
-            }
-        }
-        buildTypes.release.signingConfig signingConfigs.release
-        println("Custom keystore found, using it for release")
-    }
-    
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
-        // El SDK de Anthropic usa java.time, que no existe antes de Android 8
-        coreLibraryDesugaringEnabled true
-    }
-}
-
-dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation libs.appcompat
-    implementation libs.material // 或者更高版本
-
-    implementation libs.activity
-    implementation libs.constraintlayout
-    implementation 'androidx.security:security-crypto:1.1.0'
-    implementation 'com.google.ai.edge.litertlm:litertlm-android:0.17.1'
-    implementation 'com.anthropic:anthropic-java:2.65.0'
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
-    testImplementation libs.junit
-    testImplementation 'org.json:json:20240303'
-    testImplementation 'com.squareup.okhttp3:mockwebserver:4.12.0'
-    androidTestImplementation libs.ext.junit
-    androidTestImplementation libs.espresso.core
 }
